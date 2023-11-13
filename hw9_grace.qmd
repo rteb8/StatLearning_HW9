@@ -1,0 +1,84 @@
+---
+title: "Homework #9: Stacking and Boosting" 
+author: "Grace Zhang: (penalized) linear regression. Use cv to select lambda"
+format: ds6030hw-html
+---
+
+
+```{r config, include=FALSE}
+# Set global configurations and settings here
+knitr::opts_chunk$set()                 # set global chunk options
+ggplot2::theme_set(ggplot2::theme_bw()) # set ggplot2 theme
+```
+
+
+# Problem 1: Stacking for Kaggle
+
+You are to make at least one official entry in the [House Prices: Advanced Regression Techniques](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/overview) Kaggle contest **using stacking or model averaging**; at least one component model must be a boosting model. 
+
+- You will need to register in Kaggle (its free)
+- Read the details of the contest. Understand the data and evaluation function.
+- Make at least one submission that uses **stacking or model averaging**. 
+- If you get a score on the public leaderboard of $\text{RMSE}<0.50$ (note RMSE is calculated on the log scale), you receive full credit, otherwise, you'll lose 10 points. 
+    - I'll allow [teaming](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/team). Each team member can produce one component model and then use stacking or model averaging to combine predictions. 
+    - You don't need to team, but must still combine multiple models. At least one of the component models should be boosting. 
+- Each person submit the following in Canvas:
+    - Code (if teaming, your code and the shared stacking code)
+    - kaggle name (or team name) so we can ensure you had a valid submission. 
+    - your score and current ranking on the kaggle leaderboard
+- Top 5 scores get 2 bonus points
+    - Teams will split their bonus points among team members
+```{r}
+library(dplyr)
+library(purrr)
+library(glmnet)
+library(modeldata)
+library(tidymodels)
+library(tidyverse)
+library(conflicted)
+```
+
+
+```{r}
+train <- read.csv('/Users/ziqia/Downloads/train.csv')
+
+# Assuming 'data' is your dataframe
+# one-hot coding
+train <- data.frame(lapply(train, function(x) {
+  if(is.character(x)) as.numeric(as.factor(x)) else x
+}))
+
+
+# set NAs to 0
+train[is.na(train)] <- 0
+
+head(train,10)
+```
+
+```{r}
+set.seed(6030) # for reproducible results
+train_indices <- sample(1:nrow(train), 0.8 * nrow(train))
+train_data <- train[train_indices, ]
+test_data <- train[-train_indices, ]
+```
+
+```{r}
+#matrix response variable
+y_train <- as.matrix(train_data$SalePrice)
+
+#matrix model train set
+X_train <- model.matrix(SalePrice ~ ., data = train_data)[,-1]
+
+#penalized linear regression model
+#lasso (L1; alpha=1) with 10 fold cv
+penalized_lin_model <- cv.glmnet(x = X_train, y = y_train, nfolds = 10)
+
+#predictions on the matrix model test set
+X_test <- model.matrix(SalePrice ~ ., data = test_data)[,-1]
+penalized_lin_predictions <- predict(penalized_lin_model, s = "lambda.min", newx = X_test)
+
+#RMSE
+penalized_lin_rmse <- sqrt(mean((log(penalized_lin_predictions) - log(test_data$SalePrice))^2))
+print(paste("RMSE:", penalized_lin_rmse))
+```
+
