@@ -29,5 +29,26 @@ You are to make at least one official entry in the [House Prices: Advanced Regre
 - Top 5 scores get 2 bonus points
     - Teams will split their bonus points among team members
 
+# Data Prep
+    
+```{r}
+train_path <- "https://github.com/rteb8/StatLearning_HW9/blob/main/house-prices-advanced-regression-techniques/train.csv"
+test_path <- "https://github.com/rteb8/StatLearning_HW9/blob/main/house-prices-advanced-regression-techniques/test.csv"
+train <- read.csv(train_path)
+test <- read.csv(test_path)
+train[is.na(train)] <- 0
+head(train)
+test[is.na(test)] <- 0
+head(test)
+```
+
+```{r}
+set.seed(6030) # for reproducible results
+train_indices <- sample(1:nrow(train), 0.8 * nrow(train))
+train_data <- train[train_indices, ]
+test_data <- train[-train_indices, ]
+```
+
+
 
 
