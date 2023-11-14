@@ -111,13 +111,335 @@ Y.test <- test_data %>%
 
 Run tree
 ```{r}
+set.seed(2019)
 tree=rpart(Y~.,data=train_data) 
 summary(tree,cp=1)
 length(unique(tree$where))
-
+```
+```{r}
 # plot tree
 prp(tree,type=1,extra=1,branch=1)
 ```
+```{r}
+## predict
+#-mean squared error function 
+
+mse<-function(yhat,y){
+  yhat=as.matrix(yhat) 
+  apply(yhat,2,\(f) mean((y-f)^2)) 
+} 
+
+#must be log
+
+rmse(predict(tree),train_data$Y) #training error  
+```
+```{r}
+rmse(predict(tree, X.test),Y.test$Y) #test error  
+```
+
+```{r}
+unique(train_data$Condition2)
+```
+```{r}
+unique(X.test$Condition2)
+```
+```{r}
+# Check unique levels in the training and test datasets
+unique_levels_train <- unique(train_data$Condition2)
+unique_levels_test <- unique(X.test$Condition2)
+
+# Identify levels that are present in one but not the other
+additional_levels_train <- setdiff(unique_levels_train, unique_levels_test)
+additional_levels_test <- setdiff(unique_levels_test, unique_levels_train)
+
+# Combine all unique levels to ensure consistency
+all_levels <- union(unique_levels_train, unique_levels_test)
+
+# Update levels in the training and test datasets
+train_data$Condition2 <- factor(train_data$Condition2, levels = all_levels)
+X.test$Condition2 <- factor(X.test$Condition2, levels = all_levels)
+```
+
+```{r}
+unique(train_data$RoofMatl)
+```
+
+```{r}
+unique(X.test$RoofMatl)
+```
+
+```{r}
+# Check unique levels in the training and test datasets
+unique_levels_train <- unique(train_data$RoofMatl)
+unique_levels_test <- unique(test_data$RoofMatl)
+
+# Identify levels that are present in one but not the other
+additional_levels_train <- setdiff(unique_levels_train, unique_levels_test)
+additional_levels_test <- setdiff(unique_levels_test, unique_levels_train)
+
+# Combine all unique levels to ensure consistency
+all_levels <- union(unique_levels_train, unique_levels_test)
+
+# Update levels in the training and test datasets
+train_data$RoofMatl <- factor(train_data$RoofMatl, levels = all_levels)
+X.test$RoofMatl <- factor(X.test$RoofMatl, levels = all_levels)
+```
+
+```{r}
+unique(train_data$Exterior1st)
+```
+
+```{r}
+unique(X.test$Exterior1st)
+```
+```{r}
+# Check unique levels in the training and test datasets
+unique_levels_train <- unique(train_data$Exterior1st)
+unique_levels_test <- unique(test_data$Exterior1st)
+
+# Identify levels that are present in one but not the other
+additional_levels_train <- setdiff(unique_levels_train, unique_levels_test)
+additional_levels_test <- setdiff(unique_levels_test, unique_levels_train)
+
+# Combine all unique levels to ensure consistency
+all_levels <- union(unique_levels_train, unique_levels_test)
+
+# Update levels in the training and test datasets
+train_data$Exterior1st <- factor(train_data$Exterior1st, levels = all_levels)
+X.test$Exterior1st <- factor(X.test$Exterior1st, levels = all_levels)
+```
+
+```{r}
+unique(train_data$Heating)
+```
+
+```{r}
+unique(X.test$Heating)
+```
+
+```{r}
+# Check unique levels in the training and test datasets
+unique_levels_train <- unique(train_data$Heating)
+unique_levels_test <- unique(test_data$Heating)
+
+# Identify levels that are present in one but not the other
+additional_levels_train <- setdiff(unique_levels_train, unique_levels_test)
+additional_levels_test <- setdiff(unique_levels_test, unique_levels_train)
+
+# Combine all unique levels to ensure consistency
+all_levels <- union(unique_levels_train, unique_levels_test)
+
+# Update levels in the training and test datasets
+train_data$Heating <- factor(train_data$Heating, levels = all_levels)
+X.test$Heating <- factor(X.test$Heating, levels = all_levels)
+```
+
+```{r}
+unique(train_data$Electrical)
+```
+
+```{r}
+unique(X.test$Electrical)
+```
+
+```{r}
+# Check unique levels in the training and test datasets
+unique_levels_train <- unique(train_data$Electrical)
+unique_levels_test <- unique(test_data$Electrical)
+
+# Identify levels that are present in one but not the other
+additional_levels_train <- setdiff(unique_levels_train, unique_levels_test)
+additional_levels_test <- setdiff(unique_levels_test, unique_levels_train)
+
+# Combine all unique levels to ensure consistency
+all_levels <- union(unique_levels_train, unique_levels_test)
+
+# Update levels in the training and test datasets
+train_data$Electrical <- factor(train_data$Electrical, levels = all_levels)
+X.test$Electrical <- factor(X.test$Electrical, levels = all_levels)
+```
+
+```{r}
+unique(train_data$MiscFeature)
+```
+
+```{r}
+unique(X.test$MiscFeature)
+```
+
+```{r}
+# Check unique levels in the training and test datasets
+unique_levels_train <- unique(train_data$MiscFeature)
+unique_levels_test <- unique(test_data$MiscFeature)
+
+# Identify levels that are present in one but not the other
+additional_levels_train <- setdiff(unique_levels_train, unique_levels_test)
+additional_levels_test <- setdiff(unique_levels_test, unique_levels_train)
+
+# Combine all unique levels to ensure consistency
+all_levels <- union(unique_levels_train, unique_levels_test)
+
+# Update levels in the training and test datasets
+train_data$MiscFeature <- factor(train_data$MiscFeature, levels = all_levels)
+X.test$MiscFeature <- factor(X.test$MiscFeature, levels = all_levels)
+```
+
+### bagged tree
+```{r}
+set.seed(2019)
+bag_tree <- bagging(
+  formula = Y ~ .,
+  data = train_data,
+  nbagg = 146,  
+  coob = TRUE )
+bag_tree
+```
+```{r}
+# Function to calculate RMSE
+rmse <- function(predictions, actual) {
+  sqrt(mean((predictions - actual)^2))
+}
+
+# Function to train bagged tree model with different numbers of trees
+train_bagged_model <- function(num_trees, train_data, test_data) {
+  set.seed(2019)
+  bag_tree <- bagging(Y ~ ., data = train_data, nbagg = num_trees) 
+  predictions <- predict(bag_tree, test_data)
+  return(predictions)
+}
+
+# Create a sequence of the number of trees you want to try
+num_trees_seq <- seq(1, 200, by = 5)
+
+# Initialize an empty vector to store RMSE values
+rmse_values <- numeric(length(num_trees_seq))
+
+# Train models with different numbers of trees and calculate RMSE
+for (i in seq_along(num_trees_seq)) {
+  predictions <- train_bagged_model(num_trees_seq[i], train_data, X.test)
+  rmse_values[i] <- rmse(predictions, Y.test$Y)
+}
+
+# Create a data frame for plotting
+plot_data <- data.frame(num_trees = num_trees_seq, rmse = rmse_values)
+```
+```{r}
+# Find the minimum RMSE value and corresponding number of trees
+min_rmse_index <- which.min(plot_data$rmse)
+min_rmse_num_trees <- num_trees_seq[min_rmse_index]
+min_rmse_value <- rmse_values[min_rmse_index]
+
+# Plotting
+ggplot(plot_data, aes(x = num_trees, y = rmse)) +
+  geom_line() +
+  geom_point(data = data.frame(num_trees = min_rmse_num_trees, rmse = min_rmse_value),
+             aes(x = num_trees, y = rmse), color = "red", size = 2) +
+  labs(title = "RMSE vs Number of Trees",
+       x = "Number of Trees",
+       y = "RMSE")
+```
+
+```{r}
+min_rmse_num_trees
+```
+
+## rmse of bag_tree
+```{r}
+mse(predict(bag_tree),train_data$Y) #training error  
+```
+
+```{r}
+mse(predict(bag_tree, X.test),Y.test$Y) #test error  
+```
+
+```{r}
+rmse(predict(bag_tree),train_data$Y)
+```
+
+```{r}
+rmse(predict(bag_tree, X.test),Y.test$Y)
+```
+
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+unique(train_data$Utilities)
+```
+
+```{r}
+unique(X.test$Utilities)
+```
+
+```{r}
+# Check unique levels in the training and test datasets
+unique_levels_train <- unique(train_data$Utilities)
+unique_levels_test <- unique(test_data$Utilities)
+
+# Identify levels that are present in one but not the other
+additional_levels_train <- setdiff(unique_levels_train, unique_levels_test)
+additional_levels_test <- setdiff(unique_levels_test, unique_levels_train)
+
+# Combine all unique levels to ensure consistency
+all_levels <- union(unique_levels_train, unique_levels_test)
+
+# Update levels in the training and test datasets
+train_data$Utilities <- factor(train_data$Utilities, levels = all_levels)
+X.test$Utilities <- factor(X.test$Utilities, levels = all_levels)
+```
+
+```{r}
+align_levels <- function(train_data, test_data) {
+  # Get the names of categorical variables
+  categorical_vars <- names(train_data)[sapply(train_data, function(x) is.character(x) || is.factor(x))]
+
+  # Loop through each categorical variable
+  for (var in categorical_vars) {
+    # Convert to factor if it's a character variable
+    #if (is.character(train_data[[var]])) {
+     # train_data[[var]] <- factor(train_data[[var]])
+    #}
+    #if (is.character(test_data[[var]])) {
+     # test_data[[var]] <- factor(test_data[[var]])
+    #}
+
+    # Check unique levels in the training and test datasets
+    unique_levels_train <- unique(train_data[[var]])
+    unique_levels_test <- unique(test_data[[var]])
+    
+    #if (!identical(unique_levels_train, unique_levels_test)) {
+        # Identify levels that are present in one but not the other
+        additional_levels_train <- setdiff(unique_levels_train, unique_levels_test)
+        additional_levels_test <- setdiff(unique_levels_test, unique_levels_train)
+    
+        # Combine all unique levels to ensure consistency
+        all_levels <- union(unique_levels_train, unique_levels_test)
+    
+        # Update levels in the training and test datasets
+        train_data[[var]] <- factor(train_data[[var]], levels = all_levels)
+        test_data[[var]] <- factor(test_data[[var]], levels = all_levels)
+    #}
+  }
+  # Return the updated datasets
+  return(list(train_data = train_data, test_data = test_data))
+}
+
+# Example usage
+aligned_data <- align_levels(train_data, X.test)
+train_data <- aligned_data$train_data
+X.test <- aligned_data$test_data
+
+```
+
 
 
 
