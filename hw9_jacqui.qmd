@@ -38,7 +38,7 @@ library(glmnet)
 ```{r}
 #train_path = "C:/jacqu/OneDrive/Documents/MSDS/datasets/train.csv"
 #test_path = "C:/Users/jacqu/OneDrive/Documents/MSDS/datasets/test.csv"
-train = read.csv("C:/jacqu/OneDrive/Documents/MSDS/datasets/train.csv")
+train = read.csv("C:/Users/jacqu/OneDrive/Documents/MSDS/datasets/train.csv")
 test = read.csv("C:/Users/jacqu/OneDrive/Documents/MSDS/datasets/test.csv")
 train[is.na(train)] = 0
 head(train)
@@ -55,11 +55,11 @@ test_data = train[-train_indices, ]
 
 ```{r}
 mx = glmnet::makeX(
-  data_train = train %>% select(-SalePrice),
-  data_test = test)
+  train = train_data %>% select(-SalePrice),
+  test = test_data %>% select(-SalePrice))
 
 mx.train = mx$x
-y.train = train %>% pull(SalePrice)
+y.train = train_data %>% pull(SalePrice)
 mx.test = mx$xtest
 
 nfolds = 10
@@ -80,27 +80,29 @@ for(a in alpha){
                             mse=best_mse))
   
 }
+
 best_alpha = tab %>%
   arrange(mse) %>%
   slice(1) %>%
-  select(alpha)
+  pull(alpha)
 
 best_lambda = tab %>%
   arrange(mse) %>%
   slice(1) %>%
-  select(lambda)
+  pull(lambda)
 
-enet_model = cv.glmnet(mx.train,
+enet_model = glmnet(mx.train,
                        y.train,
                        alpha = best_alpha,
                        lambda = best_lambda)
 
-preds = data.frame(predict(enet_model, mx.test, s="lambda.min"))
-preds$yhat = preds$lambda.min
-predictions = preds %>% 
-  select(-1)
-
-rmse = sqrt(mean((log(predictions) - log(test_data$SalePrice))^2))
+preds = predict(enet_model, mx.test, s="lambda.min")
+# preds$yhat = preds$lambda.min
+# 
+# predictions = preds %>% 
+#   select(-1)
+# 
+rmse = sqrt(mean((log(preds) - log(test_data$SalePrice))^2))
 print(paste("RMSE:", rmse))
 ```
 
