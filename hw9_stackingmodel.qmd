@@ -1,6 +1,6 @@
 ---
 title: "Homework #9: Stacking and Boosting" 
-author: "**Your Name Here**"
+author: "**Rose Eluvathingal Muttikkal, Skye Jung, Grace Zhang, Serene Lu, Jacqui Unciano, Isha Thrukal**"
 format: ds6030hw-html
 ---
 
@@ -28,6 +28,118 @@ You are to make at least one official entry in the [House Prices: Advanced Regre
     - your score and current ranking on the kaggle leaderboard
 - Top 5 scores get 2 bonus points
     - Teams will split their bonus points among team members
+
+```{r}
+library(dplyr)
+library(purrr)
+library(rpart) 
+library(rpart.plot)
+library(ipred)
+library(ggplot2)
+library (readr)
+```
+
+### Data Prep
+    
+```{r}
+train_path = "https://raw.githubusercontent.com/rteb8/StatLearning_HW9/main/house-prices-advanced-regression-techniques/train.csv"
+test_path = "https://raw.githubusercontent.com/rteb8/StatLearning_HW9/main/house-prices-advanced-regression-techniques/test.csv"
+
+# load data
+train <- read.csv(url(train_path))
+test <- read.csv(url(test_path))
+test[is.na(test)] <- 0
+
+# set NAs to 0
+train[is.na(train)] <- 0
+numeric_columns <- sapply(train, is.numeric) & names(train) != "SalePrice"
+
+# Scale numeric variables
+train[numeric_columns] <- scale(train[numeric_columns])
+
+# one-hot encoding
+train <- data.frame(lapply(train, function(x) {
+  if(is.character(x)) as.factor(as.numeric(as.factor(x))) else x
+}))
+
+head(train,10)
+```
+
+```{r}
+set.seed(6030) # for reproducible results
+train_indices <- sample(1:nrow(train), 0.8 * nrow(train))
+train_data <- train[train_indices, ]
+test_data <- train[-train_indices, ]
+```
+
+### Set up x and y
+```{r}
+#Goal is to predict the log salary 
+train_data <- train_data %>% 
+  mutate(SalePrice=log(SalePrice)) %>% 
+  rename(Y=SalePrice)#convert to logSalary 
+
+test_data <- test_data %>% 
+  mutate(SalePrice=log(SalePrice)) %>% #convert to logSalary 
+  rename(Y=SalePrice) 
+
+#test data 
+X.test <- test_data %>% 
+  select(-Y)
+  
+Y.test <- test_data %>% 
+  select(Y)  
+```
+
+### Bagging Tree Model (Rose)
+```{r}
+set.seed(2019)
+bag_tree <- bagging(
+  formula = Y ~ .,
+  data = train_data,
+  nbagg = 146,  
+  coob = TRUE )
+bag_tree
+```
+
+```{r}
+rmse(predict(bag_tree, X.test),Y.test$Y) #test error
+```
+
+
+### Random Forest (Serene)
+```{r}
+
+```
+
+### GLM (Grace)
+```{r}
+
+```
+
+### Xgboost (Skye)
+```{r}
+
+```
+
+### Elastic Net (Jacqui)
+```{r}
+
+```
+
+### [Insert Model Name] (Isha)
+```{r}
+
+```
+
+
+### Stacking Model
+```{r}
+
+```
+
+
+
 
 
 
