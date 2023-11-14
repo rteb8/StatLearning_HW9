@@ -27,4 +27,80 @@ You are to make at least one official entry in the [House Prices: Advanced Regre
     - kaggle name (or team name) so we can ensure you had a valid submission. 
     - your score and current ranking on the kaggle leaderboard
 - Top 5 scores get 2 bonus points
-    - Teams will split their bonus points among team members
+    - Teams will split their bonus points among team 
+    
+```{r}
+#packages
+library(tidyverse)
+library(glmnet)
+```
+    
+```{r}
+#train_path = "C:/jacqu/OneDrive/Documents/MSDS/datasets/train.csv"
+#test_path = "C:/Users/jacqu/OneDrive/Documents/MSDS/datasets/test.csv"
+train = read.csv("C:/jacqu/OneDrive/Documents/MSDS/datasets/train.csv")
+test = read.csv("C:/Users/jacqu/OneDrive/Documents/MSDS/datasets/test.csv")
+train[is.na(train)] = 0
+head(train)
+test[is.na(test)] = 0
+head(test)
+```
+
+```{r}
+set.seed(6030) # for reproducible results
+train_indices = sample(1:nrow(train), 0.8 * nrow(train))
+train_data = train[train_indices, ]
+test_data = train[-train_indices, ]
+```
+
+```{r}
+mx = glmnet::makeX(
+  data_train = train %>% select(-SalePrice),
+  data_test = test)
+
+mx.train = mx$x
+y.train = train %>% pull(SalePrice)
+mx.test = mx$xtest
+
+nfolds = 10
+folds = sample(rep(1:nfolds, length=nrow(mx.train)))
+
+alpha = seq(0,1,0.01)
+tab = data.frame(matrix(ncol=3,nrow=0, 
+                        dimnames=list(NULL, c("alpha", "lambda", 
+                                              "mse")))) 
+
+for(a in alpha){
+  mod = cv.glmnet(mx.train,
+                  y.train,
+                  alpha = a,
+                  foldid = folds)
+  best_mse = min(mod$cvm)
+  tab = rbind(tab, list(alpha=a, lambda=mod$lambda.min, 
+                            mse=best_mse))
+  
+}
+best_alpha = tab %>%
+  arrange(mse) %>%
+  slice(1) %>%
+  select(alpha)
+
+best_lambda = tab %>%
+  arrange(mse) %>%
+  slice(1) %>%
+  select(lambda)
+
+enet_model = cv.glmnet(mx.train,
+                       y.train,
+                       alpha = best_alpha,
+                       lambda = best_lambda)
+
+preds = data.frame(predict(enet_model, mx.test, s="lambda.min"))
+preds$yhat = preds$lambda.min
+predictions = preds %>% 
+  select(-1)
+
+rmse = sqrt(mean((log(predictions) - log(test_data$SalePrice))^2))
+print(paste("RMSE:", rmse))
+```
+
