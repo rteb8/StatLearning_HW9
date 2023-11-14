@@ -1,0 +1,43 @@
+---
+title: "SLu_HW9_RF"
+author: "Serene Lu"
+date: "2023-11-13"
+output: html_document
+---
+
+```{r}
+# load data
+train <- read.csv('/Users/serenelu/Desktop/DS 6030/StatLearning_HW9/house-prices-advanced-regression-techniques/train.csv')
+test <- read.csv('/Users/serenelu/Desktop/DS 6030/StatLearning_HW9/house-prices-advanced-regression-techniques/test.csv')
+test[is.na(test)] <- 0
+
+# Assuming 'data' is your dataframe
+
+library(dplyr)
+library(purrr)
+
+train <- data.frame(lapply(train, function(x) {
+  if(is.character(x)) as.numeric(as.factor(x)) else x
+}))
+
+
+# set NAs to 0
+train[is.na(train)] <- 0
+
+head(train,10)
+
+numeric_columns <- sapply(train, is.numeric) & names(train) != "SalePrice"
+
+# Scale numeric variables
+train[numeric_columns] <- scale(train[numeric_columns])
+```
+
+```{r}
+# Model: Random Forest
+library(ranger)
+set.seed(6030)
+g1 = ranger(SalePrice ~ ., data = train)
+Z1_rf = predict(g1, test)$predictions
+#Z1_rf
+```
+
