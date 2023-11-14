@@ -11,6 +11,15 @@ knitr::opts_chunk$set()                 # set global chunk options
 ggplot2::theme_set(ggplot2::theme_bw()) # set ggplot2 theme
 ```
 
+```{r}
+library(dplyr)
+library(purrr)
+library(rpart) 
+library(rpart.plot)
+library(ipred)
+```
+
+
 
 # Problem 1: Stacking for Kaggle
 
@@ -32,14 +41,27 @@ You are to make at least one official entry in the [House Prices: Advanced Regre
 # Data Prep
     
 ```{r}
-train_path <- "https://github.com/rteb8/StatLearning_HW9/blob/main/house-prices-advanced-regression-techniques/train.csv"
-test_path <- "https://github.com/rteb8/StatLearning_HW9/blob/main/house-prices-advanced-regression-techniques/test.csv"
+train_path <- "/Users/rosee.m./Desktop/bookmarks/ds_stat_learn/StatLearning_HW9/house-prices-advanced-regression-techniques/train.csv"
+test_path <- "/Users/rosee.m./Desktop/bookmarks/ds_stat_learn/StatLearning_HW9/house-prices-advanced-regression-techniques/test.csv"
+
+# load data
 train <- read.csv(train_path)
 test <- read.csv(test_path)
-train[is.na(train)] <- 0
-head(train)
 test[is.na(test)] <- 0
-head(test)
+
+#(tree don't need one-hot encoding right?)
+#train <- data.frame(lapply(train, function(x) {
+ # if(is.character(x)) as.numeric(as.factor(x)) else x
+#}))
+
+# set NAs to 0
+train[is.na(train)] <- 0
+numeric_columns <- sapply(train, is.numeric) & names(train) != "SalePrice"
+
+# Scale numeric variables
+train[numeric_columns] <- scale(train[numeric_columns])
+
+head(train,10)
 ```
 
 ```{r}
@@ -48,6 +70,57 @@ train_indices <- sample(1:nrow(train), 0.8 * nrow(train))
 train_data <- train[train_indices, ]
 test_data <- train[-train_indices, ]
 ```
+
+# EDA
+```{r}
+# Assuming 'df' is your data frame and 'your_variable' is the variable you want to plot
+ggplot(train_data, aes(x = SalePrice)) +
+  geom_histogram(fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Sale Price",
+       x = "Sale Price",
+       y = "Frequency") +
+  theme_minimal()
+
+ggplot(train_data, aes(x = log(SalePrice))) +
+  geom_histogram(fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Log Sale Price",
+       x = "Log Sale Price",
+       y = "Frequency") +
+  theme_minimal()
+```
+Set up x and y
+```{r}
+#Goal is to predict the log salary 
+train_data <- train_data %>% 
+  mutate(SalePrice=log(SalePrice)) %>% 
+  rename(Y=SalePrice)#convert to logSalary 
+
+test_data <- test_data %>% 
+  mutate(SalePrice=log(SalePrice)) %>% #convert to logSalary 
+  rename(Y=SalePrice) 
+
+#train data
+
+#test data 
+X.test <- test_data %>% 
+  select(-Y)
+  
+Y.test <- test_data %>% 
+  select(Y)  
+```
+
+Run tree
+```{r}
+tree=rpart(Y~.,data=train_data) 
+summary(tree,cp=1)
+length(unique(tree$where))
+
+# plot tree
+prp(tree,type=1,extra=1,branch=1)
+```
+
+
+
 
 
 
