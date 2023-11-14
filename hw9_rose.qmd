@@ -55,6 +55,11 @@ numeric_columns <- sapply(train, is.numeric) & names(train) != "SalePrice"
 # Scale numeric variables
 train[numeric_columns] <- scale(train[numeric_columns])
 
+# one-hot encoding
+train <- data.frame(lapply(train, function(x) {
+  if(is.character(x)) as.factor(as.numeric(as.factor(x))) else x
+}))
+
 head(train,10)
 ```
 
@@ -101,49 +106,6 @@ X.test <- test_data %>%
   
 Y.test <- test_data %>% 
   select(Y)  
-```
-
-### Align levels between training and test data
-```{r}
-align_levels <- function(train_data, test_data) {
-  # Get the names of categorical variables
-  categorical_vars <- names(train_data)[sapply(train_data, function(x) is.character(x) || is.factor(x))]
-
-  # Loop through each categorical variable
-  for (var in categorical_vars) {
-    # Convert to factor if it's a character variable
-    #if (is.character(train_data[[var]])) {
-     # train_data[[var]] <- factor(train_data[[var]])
-    #}
-    #if (is.character(test_data[[var]])) {
-     # test_data[[var]] <- factor(test_data[[var]])
-    #}
-
-    # Check unique levels in the training and test datasets
-    unique_levels_train <- unique(train_data[[var]])
-    unique_levels_test <- unique(test_data[[var]])
-    
-    #if (!identical(unique_levels_train, unique_levels_test)) {
-        # Identify levels that are present in one but not the other
-        additional_levels_train <- setdiff(unique_levels_train, unique_levels_test)
-        additional_levels_test <- setdiff(unique_levels_test, unique_levels_train)
-    
-        # Combine all unique levels to ensure consistency
-        all_levels <- union(unique_levels_train, unique_levels_test)
-    
-        # Update levels in the training and test datasets
-        train_data[[var]] <- factor(train_data[[var]], levels = all_levels)
-        test_data[[var]] <- factor(test_data[[var]], levels = all_levels)
-    #}
-  }
-  # Return the updated datasets
-  return(list(train_data = train_data, test_data = test_data))
-}
-
-# Example usage
-aligned_data <- align_levels(train_data, X.test)
-train_data <- aligned_data$train_data
-X.test <- aligned_data$test_data
 ```
 
 ### Train simple tree
