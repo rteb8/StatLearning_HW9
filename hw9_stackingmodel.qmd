@@ -1,0 +1,174 @@
+---
+title: "Homework #9: Stacking and Boosting" 
+author: "**Rose Eluvathingal Muttikkal, Skye Jung, Grace Zhang, Serene Lu, Jacqui Unciano, Isha Thrukal**"
+format: ds6030hw-html
+---
+
+
+```{r config, include=FALSE}
+# Set global configurations and settings here
+knitr::opts_chunk$set()                 # set global chunk options
+ggplot2::theme_set(ggplot2::theme_bw()) # set ggplot2 theme
+```
+
+
+# Problem 1: Stacking for Kaggle
+
+You are to make at least one official entry in the [House Prices: Advanced Regression Techniques](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/overview) Kaggle contest **using stacking or model averaging**; at least one component model must be a boosting model. 
+
+- You will need to register in Kaggle (its free)
+- Read the details of the contest. Understand the data and evaluation function.
+- Make at least one submission that uses **stacking or model averaging**. 
+- If you get a score on the public leaderboard of $\text{RMSE}<0.50$ (note RMSE is calculated on the log scale), you receive full credit, otherwise, you'll lose 10 points. 
+    - I'll allow [teaming](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/team). Each team member can produce one component model and then use stacking or model averaging to combine predictions. 
+    - You don't need to team, but must still combine multiple models. At least one of the component models should be boosting. 
+- Each person submit the following in Canvas:
+    - Code (if teaming, your code and the shared stacking code)
+    - kaggle name (or team name) so we can ensure you had a valid submission. 
+    - your score and current ranking on the kaggle leaderboard
+- Top 5 scores get 2 bonus points
+    - Teams will split their bonus points among team members
+
+```{r}
+library(dplyr)
+library(purrr)
+library(rpart) 
+library(rpart.plot)
+library(ipred)
+library(ggplot2)
+library (readr)
+```
+
+### Data Prep
+    
+```{r}
+train_path = "https://raw.githubusercontent.com/rteb8/StatLearning_HW9/main/house-prices-advanced-regression-techniques/train.csv"
+test_path = "https://raw.githubusercontent.com/rteb8/StatLearning_HW9/main/house-prices-advanced-regression-techniques/test.csv"
+
+# load data
+train <- read.csv(url(train_path))
+test <- read.csv(url(test_path))
+test[is.na(test)] <- 0
+
+numeric_columns <- sapply(train, is.numeric) & names(train) != "SalePrice"
+
+# Scale numeric variables
+train[numeric_columns] <- scale(train[numeric_columns])
+
+train <- data.frame(lapply(train, function(x) {
+  if(is.character(x)) as.numeric(as.factor(x)) else x
+}))
+
+
+# set NAs to 0
+train[is.na(train)] <- 0
+
+head(train,10)
+```
+
+```{r}
+set.seed(6030) # for reproducible results
+train_indices <- sample(1:nrow(train), 0.8 * nrow(train))
+train_data <- train[train_indices, ]
+test_data <- train[-train_indices, ]
+```
+
+### Set up x and y
+```{r}
+#Goal is to predict the log salary 
+train_data <- train_data %>% 
+  mutate(SalePrice=log(SalePrice)) %>% 
+  rename(Y=SalePrice)#convert to logSalary 
+
+test_data <- test_data %>% 
+  mutate(SalePrice=log(SalePrice)) %>% #convert to logSalary 
+  rename(Y=SalePrice) 
+
+#test data 
+X.test <- test_data %>% 
+  select(-Y)
+  
+Y.test <- test_data %>% 
+  select(Y)  
+```
+
+### Bagging Tree Model (Rose)
+```{r}
+set.seed(2019)
+bag_tree <- bagging(
+  formula = Y ~ .,
+  data = train_data,
+  nbagg = 146,  
+  coob = TRUE )
+bag_tree
+```
+
+```{r}
+rmse(predict(bag_tree, X.test),Y.test$Y) #test error
+```
+
+
+### Random Forest (Serene)
+```{r}
+
+```
+
+### GLM (Grace)
+```{r}
+
+```
+
+### Xgboost (Skye)
+```{r}
+library(xgboost)
+dtrain <- xgb.DMatrix(data = as.matrix(train_data[,-which(names(train_data) == "Y")]), label = train_data$Y)
+dtest <- xgb.DMatrix(data = as.matrix(test_data[,-which(names(test_data) == "Y")]), label = test_data$Y)
+```
+
+```{r}
+# Set parameters for xgboost
+params <- list(
+  booster = "gbtree",
+  objective = "reg:squarederror",
+  eta = 0.1,
+  max_depth = 3,
+  min_child_weight = 1,
+  subsample = 0.5,
+  colsample_bytree = 0.5
+)
+
+# Number of boosting rounds
+nrounds <- 100
+
+# Train the model
+boost_model <- xgb.train(params = params, data = dtrain, nrounds = nrounds)
+
+# Predict on test data
+predictions <- predict(boost_model, dtest)
+
+
+rmse_log <- sqrt(mean((predictions - test_data$Y)^2))
+print(paste("RMSE on log scale:", rmse_log))
+```
+
+### Elastic Net (Jacqui)
+```{r}
+
+```
+
+### [Insert Model Name] (Isha)
+```{r}
+
+```
+
+
+### Stacking Model
+```{r}
+
+```
+
+
+
+
+
+
