@@ -1,0 +1,15 @@
+---
+title: "Homework #9: Stacking and Boosting"
+author: "Isha Thukral (GBM)"
+format: ds6030hw-html
+---
+
+```{r}
+library(conflicted)
+library(dplyr)
+library(purrr)
+library(glmnet)
+library(modeldata)
+library(tidymodels)
+library(tidyverse)
+```
